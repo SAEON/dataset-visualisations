@@ -8,6 +8,7 @@ import Slider from '@mui/material/Slider';
 import {Box, Container} from '@mui/system';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress'; // For loading indicator
+import MockOceanData from '/test_data/2025_06_21_033030_50.json';
 
 // --- Configuration Constants ---
 const HARDCODED_TIME = "2025-06-21 03:30:30"; // Time string for FastAPI query
@@ -66,7 +67,7 @@ const getPolygonFillColor = (d) => {
 
 export default function OceanViewer() {
     const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-    const [selectedDepthIndex, setSelectedDepthIndex] = useState(0);
+    const [selectedDepthIndex, setSelectedDepthIndex] = useState(3);
     const currentDepth = useMemo(() => getDepthValueFromIndex(selectedDepthIndex), [selectedDepthIndex]);
 
     const [oceanData, setOceanData] = useState([]);
@@ -75,31 +76,55 @@ export default function OceanViewer() {
     // Removed loadingCoastline state
     const [error, setError] = useState(null);
 
+    // ---- Commented out so that data is fetched from test_data in below function ----
     // Memoize the API URL for ocean data
-    const oceanDataApiUrl = useMemo(() =>
-            `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
-        , [currentDepth]);
+    // const oceanDataApiUrl = useMemo(() =>
+    //         `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
+    //     , [currentDepth]);
+    //
+    // // Effect hook to fetch ocean data
+    // useEffect(() => {
+    //     const fetchData = async () => {
+    //         setLoadingOceanData(true);
+    //         setError(null);
+    //         setOceanData([]);
+    //         try {
+    //             console.log(oceanDataApiUrl);
+    //             const response = await fetch(oceanDataApiUrl);
+    //             if (!response.ok) {
+    //                 if (response.status === 404) {
+    //                     throw new Error(`No data available for the selected time and depth: ${response.statusText}`);
+    //                 }
+    //                 throw new Error(`HTTP error! status: ${response.status}`);
+    //             }
+    //             const data = await response.json();
+    //             console.log("Fetched ocean data:", data);
+    //             setOceanData(data);
+    //         } catch (e) {
+    //             console.error("Failed to fetch ocean data:", e);
+    //             setError(e.message);
+    //         } finally {
+    //             setLoadingOceanData(false);
+    //         }
+    //     };
+    //
+    //     fetchData();
+    // }, [oceanDataApiUrl]);
 
-    // Effect hook to fetch ocean data
+    // ---- Fetch data from test data as opposed to using the URL ----
     useEffect(() => {
         const fetchData = async () => {
             setLoadingOceanData(true);
             setError(null);
             setOceanData([]);
             try {
-                console.log(oceanDataApiUrl);
-                const response = await fetch(oceanDataApiUrl);
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error(`No data available for the selected time and depth: ${response.statusText}`);
-                    }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log("Fetched ocean data:", data);
-                setOceanData(data);
+                // Simulate an API call with a delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                console.log("Using local ocean data:", MockOceanData);
+                setOceanData(MockOceanData);
             } catch (e) {
-                console.error("Failed to fetch ocean data:", e);
+                console.error("Failed to load local data:", e);
                 setError(e.message);
             } finally {
                 setLoadingOceanData(false);
@@ -107,9 +132,7 @@ export default function OceanViewer() {
         };
 
         fetchData();
-    }, [oceanDataApiUrl]);
-
-    // Removed useEffect hook for fetching coastline data
+    }, []);
 
     // Define the Deck.gl layers
     const layers = [
