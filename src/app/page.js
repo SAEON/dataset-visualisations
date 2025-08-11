@@ -2,16 +2,17 @@
 
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
 import {DeckGL} from '@deck.gl/react';
-import {PolygonLayer} from '@deck.gl/layers'; // Only PolygonLayer import
+import {PolygonLayer} from '@deck.gl/layers';
 import {Map} from 'react-map-gl/maplibre';
 import Slider from '@mui/material/Slider';
 import {Box, Container} from '@mui/system';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress'; // For loading indicator
+import CircularProgress from '@mui/material/CircularProgress';
 
 // --- Configuration Constants ---
 const HARDCODED_TIME = "2025-06-21 03:30:30"; // Time string for FastAPI query
 const API_BASE_URL = "http://localhost:8000"; // Base URL for your FastAPI
+
 const INITIAL_VIEW_STATE = {
     longitude: 17.245, // Center longitude for the region
     latitude: -32.62,  // Center latitude for the region
@@ -70,34 +71,55 @@ export default function OceanViewer() {
     const currentDepth = useMemo(() => getDepthValueFromIndex(selectedDepthIndex), [selectedDepthIndex]);
 
     const [oceanData, setOceanData] = useState([]);
-    // Removed coastlineData state
     const [loadingOceanData, setLoadingOceanData] = useState(false);
-    // Removed loadingCoastline state
     const [error, setError] = useState(null);
+
+    // --- NEW: Cache state for storing fetched data ---
+    // The cache will be an object where keys are a unique identifier for the request,
+    // and values are the fetched data.
+    const [dataCache, setDataCache] = useState({});
 
     // Memoize the API URL for ocean data
     const oceanDataApiUrl = useMemo(() =>
             `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
         , [currentDepth]);
 
+    // Create a unique cache key for the current data request
+    const cacheKey = `${HARDCODED_TIME}_${currentDepth}`;
+
     // Effect hook to fetch ocean data
     useEffect(() => {
         const fetchData = async () => {
+            // Check if data for the current time/depth combination is already in the cache
+            if (dataCache[cacheKey]) {
+                console.log("Using cached data for:", cacheKey);
+                setOceanData(dataCache[cacheKey]);
+                return; // Exit without making an API call
+            }
+
+            // If not in cache, proceed with fetching data
             setLoadingOceanData(true);
             setError(null);
             setOceanData([]);
+
             try {
-                console.log(oceanDataApiUrl);
+                console.log("Fetching new data from API for:", cacheKey);
                 const response = await fetch(oceanDataApiUrl);
                 if (!response.ok) {
                     if (response.status === 404) {
-                        throw new Error(`No data available for the selected time and depth: ${response.statusText}`);
+                        throw new Error(`No data available for the selected time and depth.`);
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("Fetched ocean data:", data);
+
+                // --- NEW: Store the fetched data in the cache ---
+                setDataCache(prevCache => ({
+                    ...prevCache,
+                    [cacheKey]: data
+                }));
                 setOceanData(data);
+
             } catch (e) {
                 console.error("Failed to fetch ocean data:", e);
                 setError(e.message);
@@ -107,13 +129,10 @@ export default function OceanViewer() {
         };
 
         fetchData();
-    }, [oceanDataApiUrl]);
+    }, [oceanDataApiUrl, cacheKey, dataCache]);
 
-    // Removed useEffect hook for fetching coastline data
 
-    // Define the Deck.gl layers
     const layers = [
-        // PolygonLayer for ocean model cells
         new PolygonLayer({
             id: 'ocean-model-polygon-layer',
             data: oceanData,
@@ -127,13 +146,12 @@ export default function OceanViewer() {
             autoHighlight: true,
             visible: oceanData.length > 0 && !loadingOceanData,
         }),
-        // Removed GeoJsonLayer for the coastline mask
-    ]; // No need for .filter(Boolean) as there's only one layer now
+    ];
 
     return (
         <div style={{position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden'}}>
             {/* Loading Indicator */}
-            {loadingOceanData && ( // Only check loadingOceanData
+            {loadingOceanData && (
                 <Box
                     sx={{
                         position: 'absolute',
