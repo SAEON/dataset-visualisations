@@ -1,210 +1,121 @@
 'use client';
 
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import React, {useState, useMemo} from 'react';
 import {DeckGL} from '@deck.gl/react';
-import {PolygonLayer} from '@deck.gl/layers';
+import {MVTLayer} from '@deck.gl/geo-layers';
 import {Map} from 'react-map-gl/maplibre';
 import Slider from '@mui/material/Slider';
-import {Box, Container} from '@mui/system';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
+import Chip from '@mui/material/Chip';
+import Grid from '@mui/material/Grid';
+import {useSearchParams} from 'next/navigation'
 
-// --- Configuration Constants ---
-const HARDCODED_TIME = "2025-06-21 03:30:30"; // Time string for FastAPI query
-const API_BASE_URL = "http://localhost:8000"; // Base URL for your FastAPI
+import {useDatasetData} from './dataset_metadata_fetcher';
+import {center, depths, depthMarks, getFillColor, temperatureColors} from './map_utils';
 
-const INITIAL_VIEW_STATE = {
-    longitude: 17.245, // Center longitude for the region
-    latitude: -32.62,  // Center latitude for the region
-    zoom: 6,
-    pitch: 0,
-    bearing: 0
-};
-
-// Depth levels for the slider (values in meters, positive for depth below surface)
-const depths = [0, -5, -10, -50, -100, -500, -1000]; // Sorted from shallow to deep
-
-// Marks for the depth slider (value corresponds to index in 'depths' array)
-const depthMarks = depths.map((d, index) => ({
-    value: index,
-    label: d.toString()
-}));
-
-// Function to get depth value from slider index
-function getDepthValueFromIndex(index) {
-    return depths[index];
-}
-
-// Define temperature thresholds and corresponding colors for the PolygonLayer
-const TEMPERATURE_THRESHOLDS = [
-    10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5
-];
-const TEMPERATURE_COLORS = [
-    [0, 0, 150, 200],   // < 10.0
-    [0, 50, 200, 200],  // 10.0 to < 10.5
-    [0, 100, 255, 200], // 10.5 to < 11.0
-    [0, 150, 200, 200], // 11.0 to < 11.5
-    [0, 200, 100, 200], // 11.5 to < 12.0
-    [100, 200, 0, 200], // 12.0 to < 12.5
-    [255, 255, 0, 200], // 12.5 to < 13.0
-    [255, 165, 0, 200], // 13.0 to < 13.5
-    [255, 100, 0, 200], // 13.5 to < 14.0
-    [255, 50, 0, 200],  // 14.0 to < 14.5
-    [200, 0, 0, 200]    // >= 14.5 (last color covers everything above the last threshold)
-];
-
-// Function to determine fill color for a polygon based on its temperature
-const getPolygonFillColor = (d) => {
-    const temperature = d.temperature;
-    for (let i = 0; i < TEMPERATURE_THRESHOLDS.length; i++) {
-        if (temperature < TEMPERATURE_THRESHOLDS[i]) {
-            return TEMPERATURE_COLORS[i];
-        }
-    }
-    return TEMPERATURE_COLORS[TEMPERATURE_COLORS.length - 1];
-};
-
-
+// Main component for the Ocean Viewer
 export default function OceanViewer() {
-    const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-    const [selectedDepthIndex, setSelectedDepthIndex] = useState(0);
-    const currentDepth = useMemo(() => getDepthValueFromIndex(selectedDepthIndex), [selectedDepthIndex]);
+    const searchParams = useSearchParams()
+    const dataset_id = searchParams.get('dataset_id');
 
-    const [oceanData, setOceanData] = useState([]);
-    const [loadingOceanData, setLoadingOceanData] = useState(false);
-    const [error, setError] = useState(null);
+    const {data, loading, error, timeMarks, times} = useDatasetData(dataset_id);
 
-    // --- NEW: Cache state for storing fetched data ---
-    // The cache will be an object where keys are a unique identifier for the request,
-    // and values are the fetched data.
-    const [dataCache, setDataCache] = useState({});
+    console.log(times);
 
-    // Memoize the API URL for ocean data
-    const oceanDataApiUrl = useMemo(() =>
-            `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
-        , [currentDepth]);
+    const [viewState, setViewState] = useState({
+        longitude: center[0],
+        latitude: center[1],
+        zoom: 6,
+        pitch: 0,
+        bearing: 0,
+    });
 
-    // Create a unique cache key for the current data request
-    const cacheKey = `${HARDCODED_TIME}_${currentDepth}`;
+    // Set initial depth to 0 from the hardcoded array
+    const initialDepth = 0;
+    const [depth, setDepth] = useState(initialDepth);
+    const [time, setTime] = useState(null);
 
-    // Effect hook to fetch ocean data
-    useEffect(() => {
-        const fetchData = async () => {
-            // Check if data for the current time/depth combination is already in the cache
-            if (dataCache[cacheKey]) {
-                console.log("Using cached data for:", cacheKey);
-                setOceanData(dataCache[cacheKey]);
-                return; // Exit without making an API call
-            }
+    // Memoize the temperature variable and its thresholds
+    const temperatureThresholds = useMemo(() => {
+        return data?.variables.find((v) => v.name === 'temperature')?.thresholds || [];
+    }, [data]);
 
-            // If not in cache, proceed with fetching data
-            setLoadingOceanData(true);
-            setError(null);
-            setOceanData([]);
+    // Set the initial time once data is loaded
+    React.useEffect(() => {
+        if (data && !time) {
+            setTime(data.start_date);
+        }
+    }, [data, time]);
 
-            try {
-                console.log("Fetching new data from API for:", cacheKey);
-                const response = await fetch(oceanDataApiUrl);
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error(`No data available for the selected time and depth.`);
-                    }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-
-                // --- NEW: Store the fetched data in the cache ---
-                setDataCache(prevCache => ({
-                    ...prevCache,
-                    [cacheKey]: data
-                }));
-                setOceanData(data);
-
-            } catch (e) {
-                console.error("Failed to fetch ocean data:", e);
-                setError(e.message);
-            } finally {
-                setLoadingOceanData(false);
-            }
-        };
-
-        fetchData();
-    }, [oceanDataApiUrl, cacheKey, dataCache]);
-
+    // Memoized URL for the tile data
+    const martinTileUrl = useMemo(
+        () =>
+            `http://localhost:3001/get_ocean_data_tile/{z}/{x}/{y}?dataset_id=${dataset_id}&date_time=${encodeURIComponent(
+                time
+            )}&depth=${depth}`,
+        [depth, time, dataset_id]
+    );
 
     const layers = [
-        new PolygonLayer({
-            id: 'ocean-model-polygon-layer',
-            data: oceanData,
-            getPolygon: d => JSON.parse(d.cell_points),
-            getFillColor: getPolygonFillColor,
-            stroked: false,
-            filled: true,
-            extruded: false,
-            wireframe: false,
-            pickable: true,
+        new MVTLayer({
+            id: 'croco-mvt-layer',
+            data: martinTileUrl,
+            key: martinTileUrl,
+            minZoom: 0,
+            maxZoom: 15,
+            getFillColor: (d) => getFillColor(d, depth, temperatureThresholds),
             autoHighlight: true,
-            visible: oceanData.length > 0 && !loadingOceanData,
+            pickable: true,
         }),
     ];
 
+    if (loading || !dataset_id) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '100vh',
+                    backgroundColor: '#1a202c',
+                    color: '#e2e8f0',
+                }}
+            >
+                <Typography variant="body1">Loading dataset metadata...</Typography>
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '100vh',
+                    backgroundColor: '#1a202c',
+                    color: '#f87171',
+                }}
+            >
+                <Typography variant="body1">Error fetching data: {error}</Typography>
+            </Box>
+        );
+    }
+
     return (
-        <div style={{position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden'}}>
-            {/* Loading Indicator */}
-            {loadingOceanData && (
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        zIndex: 1000,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: 'rgba(0, 0, 0, 0.7)',
-                        p: 4,
-                        borderRadius: 2,
-                        color: 'white'
-                    }}
-                >
-                    <CircularProgress color="inherit"/>
-                    <Typography variant="h6" sx={{mt: 2}}>
-                        Loading Ocean Data...
-                    </Typography>
-                </Box>
-            )}
-
-            {/* Error Message */}
-            {error && (
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: 20,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 1000,
-                        bgcolor: 'error.dark',
-                        color: 'white',
-                        p: 2,
-                        borderRadius: 1,
-                        textAlign: 'center'
-                    }}
-                >
-                    <Typography variant="body1">{error}</Typography>
-                </Box>
-            )}
-
+        <Box sx={{position: 'relative', width: '100vw', height: '100vh'}}>
             <DeckGL
                 layers={layers}
                 initialViewState={viewState}
-                onViewStateChange={e => setViewState(e.viewState)}
+                onViewStateChange={(e) => setViewState(e.viewState)}
                 controller={true}
             >
-                <Map
-                    mapStyle="https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
-                />
+                <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"/>
             </DeckGL>
 
             {/* Depth Slider */}
@@ -220,41 +131,125 @@ export default function OceanViewer() {
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgb(0, 30, 60)',
                     color: 'white',
-                    zIndex: 10,
                 }}
             >
-                <Container sx={{
-                    mx: 'auto',
-                    mb: 2
-                }}>
-                    <Typography id="depth-slider" gutterBottom>
-                        Depth (m)
+                <Box sx={{px: '20px', pb: '10px'}}>
+                    <Typography id="depth-slider" gutterBottom={true}>
+                        Depth
                     </Typography>
-                </Container>
+                </Box>
                 <Slider
                     size="small"
                     aria-label="Depth"
-                    defaultValue={selectedDepthIndex}
+                    value={depths.indexOf(depth)}
                     step={null}
                     valueLabelDisplay="off"
                     orientation="vertical"
                     marks={depthMarks}
                     min={0}
                     max={depths.length - 1}
-                    scale={getDepthValueFromIndex}
-                    onChange={(event, newValue) => setSelectedDepthIndex(newValue)}
+                    scale={(index) => depths[index]}
+                    onChange={(event, newValue) => setDepth(depths[newValue])}
                     track={false}
                     sx={{
                         '& .MuiSlider-markLabel': {
                             color: 'white',
                             fontWeight: 'bold',
-                            fontSize: '0.7rem'
+                            fontSize: '0.7rem',
+                            pb: '10px'
                         },
                         height: '80vh',
-                        px: 2,
                     }}
                 />
             </Box>
-        </div>
+
+            {/* Time Slider */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    bottom: 10,
+                    left: '50%',
+                    width: '60vw',
+                    py: 1,
+                    px: 3,
+                    borderRadius: 1,
+                    transform: 'translateX(-50%)',
+                    bgcolor: 'rgb(0, 30, 60)',
+                    color: 'white',
+                }}
+            >
+                <Grid container alignItems="center" spacing={2}>
+                    <Grid>
+                        <Typography id="time-slider" gutterBottom={false}>
+                            Date - Time
+                        </Typography>
+                    </Grid>
+                    <Grid size="grow">
+                        <Slider
+                            size="small"
+                            aria-label="Time"
+                            value={times.indexOf(time)}
+                            step={null}
+                            valueLabelDisplay="auto"
+                            valueLabelFormat={(value) => {
+                                return new Date(value).toLocaleString();
+                            }}
+                            marks={timeMarks}
+                            min={0}
+                            max={times.length - 1}
+                            scale={(index) => times[index]}
+                            onChange={(event, newValue) => setTime(times[newValue])}
+                            track={false}
+                            sx={{
+                                '& .MuiSlider-markLabel': {
+                                    display: 'none',
+                                },
+                                marginBottom: '0',
+                            }}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
+            <Card
+                sx={{
+                    position: 'absolute',
+                    top: 16,
+                    left: 16,
+                    borderRadius: 2,
+                    boxShadow: 3,
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(8px)',
+                    color: 'black',
+                    p: 2,
+                }}
+            >
+                <CardHeader title="Current Parameters" sx={{p: 0, pb: 1}}/>
+                <CardContent sx={{p: 0}}>
+                    <Typography variant="body2" sx={{mb: 1}} component="div">
+                        <Box component="span" sx={{fontWeight: 'bold'}}>
+                            Dataset ID:
+                        </Box>{' '}
+                        <Chip
+                            label={dataset_id}
+                            size="small"
+                            variant="outlined"
+                            sx={{fontFamily: 'monospace'}}
+                        />
+                    </Typography>
+                    <Typography variant="body2" sx={{mb: 1}} component="div">
+                        <Box component="span" sx={{fontWeight: 'bold'}}>
+                            Depth:
+                        </Box>{' '}
+                        {depth !== null ? `${depth} m` : 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                        <Box component="span" sx={{fontWeight: 'bold'}}>
+                            Time:
+                        </Box>{' '}
+                        {time !== null ? new Date(time).toLocaleString() : 'N/A'}
+                    </Typography>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }
