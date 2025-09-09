@@ -24,7 +24,6 @@ export const useDatasetData = (datasetId) => {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const jsonData = await response.json();
-                console.log(jsonData);
                 setData(jsonData);
             } catch (e) {
                 setError(e.message);
@@ -61,9 +60,6 @@ export const useDatasetData = (datasetId) => {
                 label: `${hours}:${minutes}`,
             };
         });
-
-        console.log(timeMarks)
-        console.log(times)
 
         return {timeMarks, times};
     }, [data]);
