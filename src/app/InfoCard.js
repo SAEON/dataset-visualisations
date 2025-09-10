@@ -1,9 +1,16 @@
 import React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardHeader from '@mui/material/CardHeader';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+
+const formatDatasetId = (id) => {
+    if (!id) return '';
+    return id
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
 
 export default function InfoCard({dataset_id, depth, time}) {
     return (
@@ -23,6 +30,12 @@ export default function InfoCard({dataset_id, depth, time}) {
         >
             <CardContent sx={{p: 0, m: 0, pb: '0 !important'}}>
                 <Box sx={{display: 'flex', gap: 2}}>
+                    <Typography variant="body2" component="div" sx={{marginRight: 2}}>
+                        <Box component="span" sx={{fontWeight: 'bold'}}>
+                            Dataset:
+                        </Box>{' '}
+                        {formatDatasetId(dataset_id)}
+                    </Typography>
                     <Typography variant="body2" component="div">
                         <Box component="span" sx={{fontWeight: 'bold'}}>
                             Depth:
