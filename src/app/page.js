@@ -9,13 +9,13 @@ import Typography from '@mui/material/Typography';
 import {useSearchParams} from 'next/navigation';
 
 import {useDatasetData} from './DatasetMetadataFetcher';
-import {center, depths, depthMarks, getFillColor, variableColors} from './map_utils';
-import DepthSlider from './DepthSlider';
-import TimeSlider from './TimeSlider';
+import {center, depths, depthMarks, getFillColor, variableColors} from '@/app/MapUtils';
+import DepthSlider from '@/app/DepthSlider';
+import TimeSlider from '@/app/TimeSlider';
 import InfoCard from '@/app/InfoCard';
 import ColourLegend from '@/app/ColourLegend';
 import Header from "@/app/Header";
-import LayerSelector from './LayerSelector';
+import LayerSelector from '@/app/LayerSelector';
 
 export default function OceanViewer() {
     const searchParams = useSearchParams();
