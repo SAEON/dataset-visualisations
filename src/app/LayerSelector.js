@@ -7,12 +7,12 @@ export default function LayerSelector({selectedLayer, onLayerChange}) {
         <Box
             sx={{
                 position: 'absolute',
-                top: '150px', // Adjust position as needed
+                top: '150px',
                 left: '20px',
                 zIndex: 1,
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 p: 2,
-                borderRadius: 2,
+                borderRadius: 1,
                 boxShadow: 3,
             }}
         >

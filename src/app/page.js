@@ -16,6 +16,7 @@ import InfoCard from '@/app/InfoCard';
 import ColourLegend from '@/app/ColourLegend';
 import Header from "@/app/Header";
 import LayerSelector from '@/app/LayerSelector';
+import {InfoBox} from '@/app/InfoBox';
 
 export default function OceanViewer() {
     const searchParams = useSearchParams();
@@ -35,6 +36,8 @@ export default function OceanViewer() {
     const [depth, setDepth] = useState(initialDepth);
     const [time, setTime] = useState(null);
     const [selectedLayer, setSelectedLayer] = useState('temperature');
+    const [clickedData, setClickedData] = useState(null);
+    const [showInfoBox, setShowInfoBox] = useState(false);
 
     const currentThreshold = useMemo(() => {
         if (!data) return null;
@@ -65,8 +68,15 @@ export default function OceanViewer() {
             minZoom: 0,
             maxZoom: 15,
             getFillColor: (d) => getFillColor(d, currentThreshold, selectedLayer),
+            lineWidthUnits: 'meters',
             autoHighlight: true,
             pickable: true,
+            onClick: (info) => {
+                if (info.object) {
+                    setClickedData(info);
+                    setShowInfoBox(true);
+                }
+            },
         }),
     ];
 
@@ -126,6 +136,12 @@ export default function OceanViewer() {
                 variableColors={variableColors}
                 selectedLayer={selectedLayer}
             />
+            {showInfoBox && (
+                <InfoBox
+                    data={clickedData}
+                    onClose={() => setShowInfoBox(false)}
+                />
+            )}
         </Box>
     );
 }
