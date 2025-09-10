@@ -8,6 +8,9 @@ import Slider from '@mui/material/Slider';
 import {Box, Container} from '@mui/system';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress'; // For loading indicator
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import MockOceanData from '/test_data/2025_06_21_033030_50.json';
 
 // --- Configuration Constants ---
@@ -71,45 +74,12 @@ export default function OceanViewer() {
     const currentDepth = useMemo(() => getDepthValueFromIndex(selectedDepthIndex), [selectedDepthIndex]);
 
     const [oceanData, setOceanData] = useState([]);
-    // Removed coastlineData state
     const [loadingOceanData, setLoadingOceanData] = useState(false);
-    // Removed loadingCoastline state
     const [error, setError] = useState(null);
 
-    // ---- Commented out so that data is fetched from test_data in below function ----
-    // Memoize the API URL for ocean data
-    // const oceanDataApiUrl = useMemo(() =>
-    //         `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
-    //     , [currentDepth]);
-    //
-    // // Effect hook to fetch ocean data
-    // useEffect(() => {
-    //     const fetchData = async () => {
-    //         setLoadingOceanData(true);
-    //         setError(null);
-    //         setOceanData([]);
-    //         try {
-    //             console.log(oceanDataApiUrl);
-    //             const response = await fetch(oceanDataApiUrl);
-    //             if (!response.ok) {
-    //                 if (response.status === 404) {
-    //                     throw new Error(`No data available for the selected time and depth: ${response.statusText}`);
-    //                 }
-    //                 throw new Error(`HTTP error! status: ${response.status}`);
-    //             }
-    //             const data = await response.json();
-    //             console.log("Fetched ocean data:", data);
-    //             setOceanData(data);
-    //         } catch (e) {
-    //             console.error("Failed to fetch ocean data:", e);
-    //             setError(e.message);
-    //         } finally {
-    //             setLoadingOceanData(false);
-    //         }
-    //     };
-    //
-    //     fetchData();
-    // }, [oceanDataApiUrl]);
+    // NEW state for property selection + picked polygon
+    const [selectedProperty, setSelectedProperty] = useState("temperature");
+    const [pickedPolygon, setPickedPolygon] = useState(null);
 
     // ---- Fetch data from test data as opposed to using the URL ----
     useEffect(() => {
@@ -149,14 +119,18 @@ export default function OceanViewer() {
             pickable: true,
             autoHighlight: true,
             visible: oceanData.length > 0 && !loadingOceanData,
+            onClick: info => {
+                if (info.object) {
+                    setPickedPolygon(info.object);
+                }
+            }
         }),
-        // Removed GeoJsonLayer for the coastline mask
-    ]; // No need for .filter(Boolean) as there's only one layer now
+    ];
 
     return (
         <div style={{position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden'}}>
             {/* Loading Indicator */}
-            {loadingOceanData && ( // Only check loadingOceanData
+            {loadingOceanData && (
                 <Box
                     sx={{
                         position: 'absolute',
@@ -228,10 +202,7 @@ export default function OceanViewer() {
                     zIndex: 10,
                 }}
             >
-                <Container sx={{
-                    mx: 'auto',
-                    mb: 2
-                }}>
+                <Container sx={{mx: 'auto', mb: 2}}>
                     <Typography id="depth-slider" gutterBottom>
                         Depth (m)
                     </Typography>
@@ -259,6 +230,45 @@ export default function OceanViewer() {
                         px: 2,
                     }}
                 />
+            </Box>
+
+            {/* NEW Property Toggle + Value Box */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    bottom: 20,
+                    left: 20,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    zIndex: 20,
+                    minWidth: 220
+                }}
+            >
+                <Typography variant="h6" gutterBottom>
+                    Data Viewer
+                </Typography>
+                <RadioGroup
+                    row
+                    value={selectedProperty}
+                    onChange={(e) => setSelectedProperty(e.target.value)}
+                >
+                    <FormControlLabel value="temperature" control={<Radio sx={{color: "white"}} />} label="Temperature" />
+                    <FormControlLabel value="salinity" control={<Radio sx={{color: "white"}} />} label="Salinity" />
+                </RadioGroup>
+
+                {pickedPolygon ? (
+                    <Typography variant="body1" sx={{mt: 1}}>
+                        {selectedProperty === "temperature"
+                            ? `Temperature: ${pickedPolygon.temperature} °C`
+                            : `Salinity: ${pickedPolygon.salinity} PSU`}
+                    </Typography>
+                ) : (
+                    <Typography variant="body2" sx={{mt: 1, fontStyle: "italic"}}>
+                        Click a polygon to see values
+                    </Typography>
+                )}
             </Box>
         </div>
     );
