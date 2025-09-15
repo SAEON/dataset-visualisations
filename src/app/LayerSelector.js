@@ -13,7 +13,7 @@ export default function LayerSelector({selectedLayer, onLayerChange}) {
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 p: 2,
                 borderRadius: 1,
-                boxShadow: 3,
+                boxShadow: 3
             }}
         >
             <Typography sx={{fontWeight: 'bold', mb: 1, color: 'black'}}>Layer</Typography>
@@ -23,6 +23,11 @@ export default function LayerSelector({selectedLayer, onLayerChange}) {
                     name="layer-radio-buttons-group"
                     value={selectedLayer}
                     onChange={(e) => onLayerChange(e.target.value)}
+                    sx = {{
+                        '& .MuiFormControlLabel-label': {
+                            fontSize: '0.8em'
+                        }
+                    }}
                 >
                     <FormControlLabel value="temperature" control={<Radio/>} label="Temperature"/>
                     <FormControlLabel value="salinity" control={<Radio/>} label="Salinity"/>

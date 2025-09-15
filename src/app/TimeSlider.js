@@ -9,7 +9,7 @@ export default function TimeSlider({time, setTime, times, timeMarks}) {
         <Box
             sx={{
                 position: 'absolute',
-                bottom: 10,
+                bottom: 40,
                 left: '50%',
                 width: '60vw',
                 py: 1,

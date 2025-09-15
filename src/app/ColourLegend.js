@@ -8,7 +8,6 @@ export default function ColourLegend({ currentThreshold, variableColors, selecte
         return null;
     }
 
-    // Now uses min_value and max_value from the provided currentThreshold object
     const { min_value, max_value } = currentThreshold;
     const valueRange = max_value - min_value;
     const step = valueRange / (variableColors.length - 1);
@@ -30,7 +29,7 @@ export default function ColourLegend({ currentThreshold, variableColors, selecte
         <Box
             sx={{
                 position: 'absolute',
-                bottom: 16,
+                bottom: 40,
                 left: 16,
                 boxShadow: 3,
                 backdropFilter: 'blur(8px)',
@@ -47,7 +46,7 @@ export default function ColourLegend({ currentThreshold, variableColors, selecte
                     display: 'flex',
                     flexDirection: 'column',
                     mx: 'auto',
-                    borderRadius: 1,
+                    borderRadius: 1
                 }}
             >
                 {reversedColors.map((color, index) => {

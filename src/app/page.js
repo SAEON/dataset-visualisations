@@ -17,6 +17,7 @@ import ColourLegend from '@/app/ColourLegend';
 import Header from "@/app/Header";
 import LayerSelector from '@/app/LayerSelector';
 import {InfoBox} from '@/app/InfoBox';
+import esriMapStyle from '@/app/esri_map_style.json';
 
 export default function OceanViewer() {
     const searchParams = useSearchParams();
@@ -125,7 +126,7 @@ export default function OceanViewer() {
                 }}
                 controller={true}
             >
-                <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"/>
+                <Map mapStyle={esriMapStyle}/>
             </DeckGL>
             <LayerSelector selectedLayer={selectedLayer} onLayerChange={setSelectedLayer}/>
             <DepthSlider depth={depth} setDepth={setDepth} depths={depths} depthMarks={depthMarks}/>
