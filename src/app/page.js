@@ -39,6 +39,7 @@ export default function OceanViewer() {
     const [selectedLayer, setSelectedLayer] = useState('temperature');
     const [clickedData, setClickedData] = useState(null);
     const [showInfoBox, setShowInfoBox] = useState(false);
+    const [selectedFeature, setSelectedFeature] = useState(null); // ✨ ADDED: State for the selected feature object
 
     const currentThreshold = useMemo(() => {
         if (!data) return null;
@@ -69,13 +70,32 @@ export default function OceanViewer() {
             minZoom: 0,
             maxZoom: 15,
             getFillColor: (d) => getFillColor(d, currentThreshold, selectedLayer),
-            lineWidthUnits: 'meters',
+            getLineColor: (d) => {
+                if (selectedFeature && d.properties.id === selectedFeature.properties.id) {
+                    return [255, 255, 255, 255]; // Bright Yellow (R, G, B, A)
+                }
+                return [0, 0, 0, 0];
+            },
+            getLineWidth: (d) => {
+                if (selectedFeature && d.properties.value === selectedFeature.properties.value) {
+                    return 3;
+                }
+                return 0;
+            },
+            lineWidthUnits: 'pixels',
+            updateTriggers: {
+                getLineColor: [selectedFeature],
+                getLineWidth: [selectedFeature],
+            },
             autoHighlight: true,
             pickable: true,
             onClick: (info) => {
                 if (info.object) {
                     setClickedData(info);
                     setShowInfoBox(true);
+                    setSelectedFeature(info.object);
+                } else {
+                    setSelectedFeature(null);
                 }
             },
         }),
@@ -140,7 +160,11 @@ export default function OceanViewer() {
             {showInfoBox && (
                 <InfoBox
                     data={clickedData}
-                    onClose={() => setShowInfoBox(false)}
+                    onClose={() => {
+                        setShowInfoBox(false);
+                        setSelectedFeature(null);
+                    }
+                    }
                 />
             )}
         </Box>
