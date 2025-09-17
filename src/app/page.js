@@ -76,6 +76,40 @@ export default function OceanViewer() {
     const [oceanData, setOceanData] = useState([]);
     const [loadingOceanData, setLoadingOceanData] = useState(false);
     const [error, setError] = useState(null);
+    // ---- Commented out so that data is fetched from test_data in below function ----
+    // Memoize the API URL for ocean data
+    // const oceanDataApiUrl = useMemo(() =>
+    //         `${API_BASE_URL}/data/${encodeURIComponent(HARDCODED_TIME)}/${currentDepth}`
+    //     , [currentDepth]);
+    //
+    // // Effect hook to fetch ocean data
+    // useEffect(() => {
+    //     const fetchData = async () => {
+    //         setLoadingOceanData(true);
+    //         setError(null);
+    //         setOceanData([]);
+    //         try {
+    //             console.log(oceanDataApiUrl);
+    //             const response = await fetch(oceanDataApiUrl);
+    //             if (!response.ok) {
+    //                 if (response.status === 404) {
+    //                     throw new Error(`No data available for the selected time and depth: ${response.statusText}`);
+    //                 }
+    //                 throw new Error(`HTTP error! status: ${response.status}`);
+    //             }
+    //             const data = await response.json();
+    //             console.log("Fetched ocean data:", data);
+    //             setOceanData(data);
+    //         } catch (e) {
+    //             console.error("Failed to fetch ocean data:", e);
+    //             setError(e.message);
+    //         } finally {
+    //             setLoadingOceanData(false);
+    //         }
+    //     };
+    //
+    //     fetchData();
+    // }, [oceanDataApiUrl]);
 
     // NEW state for property selection + picked polygon
     const [selectedProperty, setSelectedProperty] = useState("temperature");
@@ -236,7 +270,7 @@ export default function OceanViewer() {
             <Box
                 sx={{
                     position: 'absolute',
-                    bottom: 20,
+                    top: 20,
                     left: 20,
                     p: 2,
                     borderRadius: 2,
