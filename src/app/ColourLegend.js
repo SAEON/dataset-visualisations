@@ -14,9 +14,11 @@ export default function ColourLegend({ currentThreshold, variableColors, selecte
 
     const getUnitLabel = (layer) => {
         if (layer === 'temperature') {
-            return '°C';
+            return 'Temperature (°C)';
         } else if (layer === 'salinity') {
-            return 'PSU';
+            return 'Salinity (PSU)';
+        } else if (layer === 'zeta') {
+            return 'Zeta (m)'
         }
         return '';
     };
@@ -39,7 +41,7 @@ export default function ColourLegend({ currentThreshold, variableColors, selecte
             }}
         >
             <Typography variant="body2" sx={{fontWeight: 'bold', textAlign: 'center', mb: 1, color: 'black'}}>
-                {selectedLayer === 'temperature' ? 'Temperature' : 'Salinity'} ({unitLabel})
+                {unitLabel}
             </Typography>
             <Box
                 sx={{

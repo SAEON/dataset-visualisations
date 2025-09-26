@@ -7,7 +7,7 @@ export const InfoBox = ({data, onClose}) => {
 
     const longitude = data.coordinate[0];
     const latitude = data.coordinate[1];
-    const {temperature, salinity, u_velocity, v_velocity} = data.object.properties;
+    const {temperature, salinity, u_velocity, v_velocity, zeta} = data.object.properties;
 
     return (
         <Box
@@ -17,7 +17,7 @@ export const InfoBox = ({data, onClose}) => {
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 zIndex: 100,
-                width: '30%',
+                width: '35%',
                 backgroundColor: 'rgba(0, 30, 60, 0.8)',
                 borderRadius: 1,
                 p: 2,
@@ -43,6 +43,7 @@ export const InfoBox = ({data, onClose}) => {
                             <TableCell sx={{ color: 'white' }}>Salinity</TableCell>
                             <TableCell sx={{ color: 'white' }}>U Velocity</TableCell>
                             <TableCell sx={{ color: 'white' }}>V Velocity</TableCell>
+                            <TableCell sx={{ color: 'white' }}>Zeta</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -53,6 +54,7 @@ export const InfoBox = ({data, onClose}) => {
                             <TableCell sx={{ color: 'white' }}>{parseFloat(salinity).toFixed(2)}</TableCell>
                             <TableCell sx={{ color: 'white' }}>{parseFloat(u_velocity).toFixed(2)}</TableCell>
                             <TableCell sx={{ color: 'white' }}>{parseFloat(v_velocity).toFixed(2)}</TableCell>
+                            <TableCell sx={{ color: 'white' }}>{parseFloat(zeta).toFixed(2)}</TableCell>
                         </TableRow>
                     </TableBody>
                 </Table>

@@ -31,6 +31,7 @@ export default function LayerSelector({selectedLayer, onLayerChange}) {
                 >
                     <FormControlLabel value="temperature" control={<Radio/>} label="Temperature"/>
                     <FormControlLabel value="salinity" control={<Radio/>} label="Salinity"/>
+                    <FormControlLabel value="zeta" control={<Radio/>} label="Zeta"/>
                 </RadioGroup>
             </FormControl>
         </Box>

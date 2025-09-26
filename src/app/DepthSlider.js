@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Slider from '@mui/material/Slider';
 
-export default function DepthSlider({ depth, setDepth, depths, depthMarks }) {
+export default function DepthSlider({ depth, setDepth, depths, depthMarks, disabled = false }) {
     return (
         <Box
             sx={{
@@ -24,6 +24,7 @@ export default function DepthSlider({ depth, setDepth, depths, depthMarks }) {
                 </Typography>
             </Box>
             <Slider
+                disabled={disabled}
                 size="medium"
                 aria-label="Depth"
                 value={depths.indexOf(depth)}

@@ -39,7 +39,8 @@ export default function OceanViewer() {
     const [selectedLayer, setSelectedLayer] = useState('temperature');
     const [clickedData, setClickedData] = useState(null);
     const [showInfoBox, setShowInfoBox] = useState(false);
-    const [selectedFeature, setSelectedFeature] = useState(null); // ✨ ADDED: State for the selected feature object
+    const [selectedFeature, setSelectedFeature] = useState(null);
+    const [isDepthSliderDisabled, setIsDepthSliderDisabled] = useState(false);
 
     const currentThreshold = useMemo(() => {
         if (!data) return null;
@@ -53,6 +54,15 @@ export default function OceanViewer() {
             setTime(data.start_date);
         }
     }, [data, time]);
+
+    React.useEffect( () => {
+        if (selectedLayer === 'zeta') {
+            setDepth(0);
+            setIsDepthSliderDisabled(true);
+        } else {
+            setIsDepthSliderDisabled(false);
+        }
+    }, [selectedLayer])
 
     const martinTileUrl = useMemo(
         () =>
@@ -72,7 +82,7 @@ export default function OceanViewer() {
             getFillColor: (d) => getFillColor(d, currentThreshold, selectedLayer),
             getLineColor: (d) => {
                 if (selectedFeature && d.properties.id === selectedFeature.properties.id) {
-                    return [255, 255, 255, 255]; // Bright Yellow (R, G, B, A)
+                    return [255, 255, 255, 255];
                 }
                 return [0, 0, 0, 0];
             },
@@ -113,7 +123,7 @@ export default function OceanViewer() {
                     color: '#e2e8f0',
                 }}
             >
-                <Typography variant="body1">Loading dataset metadata...</Typography>
+                <Typography variant="body1">Loading data...</Typography>
             </Box>
         );
     }
@@ -149,7 +159,7 @@ export default function OceanViewer() {
                 <Map mapStyle={esriMapStyle}/>
             </DeckGL>
             <LayerSelector selectedLayer={selectedLayer} onLayerChange={setSelectedLayer}/>
-            <DepthSlider depth={depth} setDepth={setDepth} depths={depths} depthMarks={depthMarks}/>
+            <DepthSlider depth={depth} setDepth={setDepth} depths={depths} depthMarks={depthMarks} disabled={isDepthSliderDisabled}/>
             <TimeSlider time={time} setTime={setTime} times={times} timeMarks={timeMarks}/>
             <InfoCard dataset_id={dataset_id} depth={depth} time={time}/>
             <ColourLegend
