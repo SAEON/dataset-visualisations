@@ -1,7 +1,5 @@
-import {useState, useEffect, useMemo} from 'react';
-
-// The base URL for your FastAPI server
-const API_BASE_URL = 'http://localhost:8000';
+import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/config';
 
 /**
  * A custom React hook for fetching dataset metadata from the API.
@@ -35,12 +33,12 @@ export const useDatasetData = (datasetId) => {
     }, [datasetId]); // Re-fetch data if the datasetId changes
 
     // Generate dynamic time marks for the slider and memoize them
-    const {timeMarks, times} = useMemo(() => {
+    const { timeMarks, times } = useMemo(() => {
         if (!data) {
-            return {timeMarks: [], times: []};
+            return { timeMarks: [], times: [] };
         }
 
-        const {start_date, end_date, time_step_minutes} = data;
+        const { start_date, end_date, time_step_minutes } = data;
         const times = [];
         const currentTime = new Date(start_date + 'Z'); // Treat start_date as UTC
         const endDate = new Date(end_date + 'Z');     // Treat end_date as UTC
@@ -61,8 +59,8 @@ export const useDatasetData = (datasetId) => {
             };
         });
 
-        return {timeMarks, times};
+        return { timeMarks, times };
     }, [data]);
 
-    return {data, loading, error, timeMarks, times};
+    return { data, loading, error, timeMarks, times };
 };
